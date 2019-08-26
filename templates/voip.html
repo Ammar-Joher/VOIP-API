@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VOIP</title>
+
+    <!-- Loads the static js file -->
+    {% load static %}
+    <!-- Loads JQuery Files -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    <!-- Load the css file -->
+    <link rel="stylesheet" type="text/css" href="{% static 'css/master.css' %}">
+</head>
+<body>
+    {% if user.is_authenticated %}
+
+		<form method="POST">
+    		{% csrf_token %}
+
+        	<table id="something">
+        		<tr>
+        			<th>Name</th>
+        			<th>Location</th>
+        			<th>Phone Number</th>
+        			<th>Notes</th>
+        			<th>Action</th>
+        		</tr>
+        	{% for c in clients %}
+        		<tr>
+        			<td>{{ c.name }}</td>
+        			<td>{{ c.location }}</td>
+        			<td>{{ c.phone_number }}</td>
+        			<td><input id="notes" type="text" name="firstname" value="{{c.notes}}"></td>
+        			<td><button class="callBtn" id="{{ forloop.counter }}">Call</button></td>
+        			<td><button class="declineBtn" id="{{ forloop.counter }}">Decline</button></td>
+        		</tr>
+        	{% endfor %}
+        </table>
+        	<button type="submit" class="save btn btn-default">Save</button>
+    	</form>
+
+        <p><a href="{% url 'logout' %}">logout</a></p>
+    {% else %}
+        <p>You are not logged in</p>
+        <a href="{% url 'login' %}">login</a>
+    {% endif %}
+</body>
+</html>
