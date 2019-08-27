@@ -100,6 +100,7 @@ class LoginView(TemplateView):
 
 
 def logout_view(request):
+    requests.post(BASE_API + "logout", auth=('', request.session['user_token']))
+
     logout(request)
-    del request.session['user_token']
     return redirect('login')
