@@ -2,6 +2,7 @@ import requests
 import json
 from django.contrib.auth import authenticate, logout, login
 from django.contrib import messages
+from django.db.models import F
 from django.shortcuts import render, redirect
 
 from django.urls import reverse
@@ -19,20 +20,33 @@ class VoipView(TemplateView):
     # form = ContactsForm()
 
     def get(self, request, *args, **kwargs):
-        clients = Contacts.objects.all().order_by('id')
+        # Get only contacts that are for that specific user.
+        clients = Contacts.objects.filter(user_id=request.user).order_by('id')
         print(clients)
-
-        # Log in to VOIP Studio only if the user isn't authenticated
-        # if 'password' in request.session:
 
         return render(request, self.template_name, {'clients': clients})
 
     def post(self, request, **kwargs):
-        form = ContactsForm(request.POST)
-        print(request.POST)
+        if request.POST["data"] == "call":
+            username = request.user.email
+            password = request.session['user_token']
+            phone_number = request.POST['phone_number']
+            # print("Username -> ", username, "\nPassword -> ", password, "\nPhone Number -> ", phone_number)
 
-        # if form.is_valid():
-        #     form.save()
+            # Header and data needed to connect to the API.
+            headers = {'Content-Type': 'application/json'}
+            payload = {
+                "to": phone_number
+            }
+
+            # Make the Call request to the VOIP Studio API.
+            r = requests.post(BASE_API + "calls", json=payload, headers=headers, auth=(username, password))
+
+            if r.status_code == 201:
+                # Increments counter based on how many calls were made.
+                called_user = Contacts.objects.get(phone_number=phone_number)
+                called_user.received_count += 1
+                called_user.save()
 
         return redirect('voip')
 
@@ -69,8 +83,6 @@ class LoginView(TemplateView):
 
                 # Make the login request to the VOIP Studio API.
                 r = requests.post(BASE_API + "login", json=payload, headers=headers)
-
-                print("Status code is -> ", r.status_code)
                 json_request = json.loads(r.content)
 
                 if r.status_code != 200:
@@ -89,4 +101,5 @@ class LoginView(TemplateView):
 
 def logout_view(request):
     logout(request)
+    del request.session['user_token']
     return redirect('login')

@@ -9,6 +9,7 @@ $(document).ready(function(){
     });
     console.log(phoneArray)
 
+    // Sends POST Request to Django On Call Button Click.
     $(".callBtn").click(function(event) {
         event.preventDefault();
         var id = this.id;
@@ -16,6 +17,7 @@ $(document).ready(function(){
         $.ajax({
             type: "POST",
             data: {
+                "data": "call",
                 "phone_number": phoneArray[id],
                 csrfmiddlewaretoken: csrf_token
             },
