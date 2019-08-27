@@ -1,39 +1,43 @@
+import requests
+import json
 from django.contrib.auth import authenticate, logout, login
+from django.contrib import messages
 from django.shortcuts import render, redirect
 
-# Create your views here.
 from django.urls import reverse
 from django.views.generic import TemplateView
 
-from .models import voip_user
-from .forms import voip_user_form, LoginForm
+from .models import Contacts
+from .forms import ContactsForm, LoginForm
+
+BASE_API = "https://l7api.com/v1.1/voipstudio/"
 
 
-class voipView(TemplateView):
+# Create your views here.
+class VoipView(TemplateView):
     template_name = 'voip.html'
-    form = voip_user_form()
+    # form = ContactsForm()
 
     def get(self, request, *args, **kwargs):
-        clients = voip_user.objects.all().order_by('id')
+        clients = Contacts.objects.all().order_by('id')
         print(clients)
 
-        # password = request.session['password']
+        # Log in to VOIP Studio only if the user isn't authenticated
+        # if 'password' in request.session:
 
         return render(request, self.template_name, {'clients': clients})
 
     def post(self, request, **kwargs):
-        form = voip_user_form(request.POST)
-        print(form)
-
-        password = kwargs['password']
+        form = ContactsForm(request.POST)
+        print(request.POST)
 
         # if form.is_valid():
         #     form.save()
 
-        return redirect('voip', password)
+        return redirect('voip')
 
 
-class loginView(TemplateView):
+class LoginView(TemplateView):
     template_name = 'registration/login.html'
 
     def get(self, request, *args, **kwargs):
@@ -51,15 +55,38 @@ class loginView(TemplateView):
             user = authenticate(request, username=username, password=password)
 
             if user is not None:
-                request.session['password'] = password
                 login(request, user)
-                return redirect('voip')
+
+                current_user = request.user
+                email = current_user.email
+
+                # Headers and data needed to connect to the API.
+                headers = {'Content-Type': 'application/json'}
+                payload = {
+                    "email": email,
+                    "password": password,
+                }
+
+                # Make the login request to the VOIP Studio API.
+                r = requests.post(BASE_API + "login", json=payload, headers=headers)
+
+                print("Status code is -> ", r.status_code)
+                json_request = json.loads(r.content)
+
+                if r.status_code != 200:
+                    # Display error
+                    messages.error(request, json_request["errors"][0]["message"])
+                    return redirect('login')
+                else:
+                    print(json_request["user_token"])
+                    request.session['user_token'] = json_request["user_token"]
+                    return redirect('voip')
             else:
                 return redirect(reverse('login'))
         else:
             return redirect(reverse('login'))
 
 
-def logoutView(request):
+def logout_view(request):
     logout(request)
     return redirect('login')

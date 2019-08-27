@@ -5,6 +5,14 @@
     <title>Login</title>
 </head>
 <body>
+    <!-- Prints error messages if they exist -->
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li class="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
     <form method="POST">
     	{% csrf_token %}
         {{ form.as_p }}

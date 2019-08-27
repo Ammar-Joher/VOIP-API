@@ -4,41 +4,46 @@
     <meta charset="UTF-8">
     <title>VOIP</title>
 
-    <!-- Loads the static js file -->
     {% load static %}
     <!-- Loads JQuery Files -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+	<!-- Loads the javascript file -->
+    <script type="text/javascript" src="{% static 'js/app.js' %}"></script>
 
     <!-- Load the css file -->
     <link rel="stylesheet" type="text/css" href="{% static 'css/master.css' %}">
 </head>
 <body>
-    {% if user.is_authenticated %}
+	{% if user.is_authenticated %}
+	<script>var csrf_token = '{{ csrf_token }}'</script>
 
 		<form method="POST">
-    		{% csrf_token %}
+			{% csrf_token %}
 
+			<!-- Prints the table containing all the people in the contacts list -->
         	<table id="something">
         		<tr>
         			<th>Name</th>
         			<th>Location</th>
         			<th>Phone Number</th>
         			<th>Notes</th>
-        			<th>Action</th>
+					<th>Call</th>
+					<th>Decline</th>
         		</tr>
         	{% for c in clients %}
         		<tr>
         			<td>{{ c.name }}</td>
         			<td>{{ c.location }}</td>
         			<td>{{ c.phone_number }}</td>
-        			<td><input id="notes" type="text" name="firstname" value="{{c.notes}}"></td>
+        			<td><input id="notes" type="text" name="notes" value="{{c.notes}}"></td>
         			<td><button class="callBtn" id="{{ forloop.counter }}">Call</button></td>
         			<td><button class="declineBtn" id="{{ forloop.counter }}">Decline</button></td>
         		</tr>
         	{% endfor %}
         </table>
         	<button type="submit" class="save btn btn-default">Save</button>
-    	</form>
+		</form>
 
         <p><a href="{% url 'logout' %}">logout</a></p>
     {% else %}
