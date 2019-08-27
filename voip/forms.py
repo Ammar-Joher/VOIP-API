@@ -1,17 +1,17 @@
 from django.contrib.auth.forms import AuthenticationForm
 from django.forms import ModelForm, CharField, TextInput, PasswordInput
 
-from .models import voip_user
+from .models import Contacts
 
 
-class voip_user_form(ModelForm):
+class ContactsForm(ModelForm):
     name = CharField()
     location = CharField()
     phone_number = CharField()
     notes = CharField()
 
     class Meta:
-        model = voip_user
+        model = Contacts
         exclude = {'received_count'}
 
 class LoginForm(AuthenticationForm):
