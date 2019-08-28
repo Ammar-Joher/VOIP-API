@@ -23,11 +23,13 @@ class VoipView(TemplateView):
     # form = ContactsForm()
 
     def get(self, request, *args, **kwargs):
-        # Get only contacts that are for that specific user.
-        clients = Contacts.objects.filter(user_id=request.user).order_by('id')
-        print(clients)
 
-        return render(request, self.template_name, {'clients': clients})
+        if request.user.is_authenticated:
+            # Get only contacts that are for that specific user.
+            clients = Contacts.objects.filter(user_id=request.user).order_by('id')
+            return render(request, self.template_name, {'clients': clients})
+        else:
+            return redirect('login')
 
     def post(self, request, **kwargs):
         if request.POST["data"] == "call":
@@ -92,9 +94,9 @@ class LoginView(TemplateView):
                     messages.error(request, json_request["errors"][0]["message"])
                     return redirect('login')
                 else:
-                    # Start The Updater
+                    # Start The Scheduler
                     if not scheduler.running:
-                        updater(1)
+                        updater(request, 1)
 
                     print(json_request["user_token"])
                     request.session['user_token'] = json_request["user_token"]
@@ -109,25 +111,29 @@ def logout_view(request):
     requests.post(BASE_API + "logout", auth=('', request.session['user_token']))
 
     # Stop Timed Schedule
-    updater(0)
+    updater(request, 0)
 
     logout(request)
     return redirect('login')
 
 
-def ping_api():
+def ping_api(request):
     print("Inside Ping Function")
 
     # Makes a ping request every 14 minutes to keep the user token alive
-    # requests.post(BASE_API + "logout", auth=('', request.session['user_token']))
+    r = requests.get(BASE_API + "ping", auth=('', request.session['user_token']))
+    print(r.status_code)
+    print(r.content)
+
+    # ToDo: logout if the ping fails
 
 
 # Start APScheduling
 # 0 = Stop
 # 1 = Start
-def updater(start_or_stop):
+def updater(request, start_or_stop):
     if start_or_stop == 1:
         scheduler.start()
-        scheduler.add_job(ping_api, 'interval', minutes=1, id='ping_scheduler_id')
+        scheduler.add_job(lambda: ping_api(request), 'interval', minutes=14, id='ping_scheduler_id')
     elif start_or_stop == 0:
-        scheduler.remove_job('ping_scheduler_id')
+        scheduler.remove_all_jobs()
