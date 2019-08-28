@@ -14,6 +14,7 @@ class ContactsForm(ModelForm):
         model = Contacts
         exclude = {'received_count'}
 
+
 class LoginForm(AuthenticationForm):
     """
     This function overrides the backend allows authentication of inactive users

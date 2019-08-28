@@ -1,8 +1,10 @@
 import requests
 import json
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.blocking import BlockingScheduler
 from django.contrib.auth import authenticate, logout, login
 from django.contrib import messages
-from django.db.models import F
 from django.shortcuts import render, redirect
 
 from django.urls import reverse
@@ -11,7 +13,8 @@ from django.views.generic import TemplateView
 from .models import Contacts
 from .forms import ContactsForm, LoginForm
 
-BASE_API = "https://l7api.com/v1.1/voipstudio/"
+BASE_API = "https://l7api.com/v1.1/voipstudio/"  # The base api for voip studio.
+scheduler = BackgroundScheduler()  # Initializing the scheduler to send pings to the api so we get to keep the user token
 
 
 # Create your views here.
@@ -61,7 +64,6 @@ class LoginView(TemplateView):
 
     def post(self, request):
         form = LoginForm(request.POST, request.POST)
-        print(form)
 
         if form.is_valid():
             username = request.POST['username']
@@ -90,6 +92,10 @@ class LoginView(TemplateView):
                     messages.error(request, json_request["errors"][0]["message"])
                     return redirect('login')
                 else:
+                    # Start The Updater
+                    if not scheduler.running:
+                        updater(1)
+
                     print(json_request["user_token"])
                     request.session['user_token'] = json_request["user_token"]
                     return redirect('voip')
@@ -102,5 +108,26 @@ class LoginView(TemplateView):
 def logout_view(request):
     requests.post(BASE_API + "logout", auth=('', request.session['user_token']))
 
+    # Stop Timed Schedule
+    updater(0)
+
     logout(request)
     return redirect('login')
+
+
+def ping_api():
+    print("Inside Ping Function")
+
+    # Makes a ping request every 14 minutes to keep the user token alive
+    # requests.post(BASE_API + "logout", auth=('', request.session['user_token']))
+
+
+# Start APScheduling
+# 0 = Stop
+# 1 = Start
+def updater(start_or_stop):
+    if start_or_stop == 1:
+        scheduler.start()
+        scheduler.add_job(ping_api, 'interval', minutes=1, id='ping_scheduler_id')
+    elif start_or_stop == 0:
+        scheduler.remove_job('ping_scheduler_id')
