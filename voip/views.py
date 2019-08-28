@@ -14,7 +14,9 @@ from .models import Contacts
 from .forms import ContactsForm, LoginForm
 
 BASE_API = "https://l7api.com/v1.1/voipstudio/"  # The base api for voip studio.
-scheduler = BackgroundScheduler()  # Initializing the scheduler to send pings to the api so we get to keep the user token
+
+# Initializing the scheduler to send pings to the api so we get to keep the user token
+scheduler = BackgroundScheduler()
 
 
 # Create your views here.
@@ -32,26 +34,38 @@ class VoipView(TemplateView):
             return redirect('login')
 
     def post(self, request, **kwargs):
-        if request.POST["data"] == "call":
-            username = request.user.email
-            password = request.session['user_token']
-            phone_number = request.POST['phone_number']
-            # print("Username -> ", username, "\nPassword -> ", password, "\nPhone Number -> ", phone_number)
+        print(request.POST)
+        if 'data' in request.POST:
+            if request.POST['data'] == 'call':
+                username = request.user.email
+                password = request.session['user_token']
+                phone_number = request.POST['phone_number']
+                # print("Username -> ", username, "\nPassword -> ", password, "\nPhone Number -> ", phone_number)
 
-            # Header and data needed to connect to the API.
-            headers = {'Content-Type': 'application/json'}
-            payload = {
-                "to": phone_number
-            }
+                # Header and data needed to connect to the API.
+                headers = {'Content-Type': 'application/json'}
+                payload = {
+                    "to": phone_number
+                }
 
-            # Make the Call request to the VOIP Studio API.
-            r = requests.post(BASE_API + "calls", json=payload, headers=headers, auth=(username, password))
+                # Make the Call request to the VOIP Studio API.
+                r = requests.post(BASE_API + "calls", json=payload, headers=headers, auth=(username, password))
 
-            if r.status_code == 201:
-                # Increments counter based on how many calls were made.
-                called_user = Contacts.objects.get(phone_number=phone_number)
-                called_user.received_count += 1
-                called_user.save()
+                if r.status_code == 201:
+                    # Increments counter based on how many calls were made.
+                    called_user = Contacts.objects.get(phone_number=phone_number)
+                    called_user.received_count += 1
+                    called_user.save()
+        elif 'notes' in request.POST:
+            everything = dict(request.POST)
+            notes = everything['notes']
+
+            contacts = Contacts.objects.filter(user_id=request.user).order_by('id')
+
+            # Update the notes in the database.
+            for i, j in enumerate(contacts):
+                j.notes = notes[i]
+                j.save()
 
         return redirect('voip')
 
@@ -126,6 +140,8 @@ def ping_api(request):
     print(r.content)
 
     # ToDo: logout if the ping fails
+    # if r.status_code != 200:
+    #     return redirect('logout')
 
 
 # Start APScheduling
