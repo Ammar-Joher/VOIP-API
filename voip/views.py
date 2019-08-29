@@ -163,3 +163,5 @@ def updater(request, start_or_stop):
         scheduler.add_job(lambda: ping_api(request), 'interval', minutes=14, id='ping_scheduler_id')
     elif start_or_stop == 0:
         scheduler.remove_all_jobs()
+
+# ToDo: User should not be able to decline immediately

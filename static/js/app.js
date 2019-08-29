@@ -36,7 +36,6 @@ $(document).ready(function(){
                 "data": "decline",
                 csrfmiddlewaretoken: csrf_token
             },
-            success: $(".declineBtn").prop("disabled", true),
         });
     });
 
