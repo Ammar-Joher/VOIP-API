@@ -1,4 +1,5 @@
 $(document).ready(function(){
+    $(".declineBtn").prop("disabled", true)
 
     // Initializing an empty array
     phoneArray = []
@@ -21,6 +22,21 @@ $(document).ready(function(){
                 "phone_number": phoneArray[id],
                 csrfmiddlewaretoken: csrf_token
             },
+            success: $(".declineBtn").prop("disabled", false),
+        });
+    });
+
+    // Sends POST request to django on Decline Button Click
+    $(".declineBtn").click(function(event) {
+        event.preventDefault();
+
+        $.ajax({
+            type: "POST",
+            data: {
+                "data": "decline",
+                csrfmiddlewaretoken: csrf_token
+            },
+            success: $(".declineBtn").prop("disabled", true),
         });
     });
 

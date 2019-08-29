@@ -2,7 +2,6 @@ import requests
 import json
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.schedulers.blocking import BlockingScheduler
 from django.contrib.auth import authenticate, logout, login
 from django.contrib import messages
 from django.shortcuts import render, redirect
@@ -11,7 +10,7 @@ from django.urls import reverse
 from django.views.generic import TemplateView
 
 from .models import Contacts
-from .forms import ContactsForm, LoginForm
+from .forms import LoginForm
 
 BASE_API = "https://l7api.com/v1.1/voipstudio/"  # The base api for voip studio.
 
@@ -22,7 +21,6 @@ scheduler = BackgroundScheduler()
 # Create your views here.
 class VoipView(TemplateView):
     template_name = 'voip.html'
-    # form = ContactsForm()
 
     def get(self, request, *args, **kwargs):
 
@@ -56,6 +54,19 @@ class VoipView(TemplateView):
                     called_user = Contacts.objects.get(phone_number=phone_number)
                     called_user.received_count += 1
                     called_user.save()
+
+                    # Save caller ID in session token
+                    json_request = json.loads(r.content)
+                    request.session['call_id'] = json_request["data"]["id"]
+
+            elif request.POST['data'] == 'decline':
+                print(request.session['call_id'])
+
+                url = BASE_API + "calls/" + str(request.session['call_id'])
+
+                r = requests.request("DELETE", url, auth=('', request.session['user_token']))
+                print(r.status_code)
+
         elif 'notes' in request.POST:
             everything = dict(request.POST)
             notes = everything['notes']
@@ -137,7 +148,6 @@ def ping_api(request):
     # Makes a ping request every 14 minutes to keep the user token alive
     r = requests.get(BASE_API + "ping", auth=('', request.session['user_token']))
     print(r.status_code)
-    print(r.content)
 
     # ToDo: logout if the ping fails
     # if r.status_code != 200:
