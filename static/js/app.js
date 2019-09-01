@@ -1,5 +1,5 @@
 $(document).ready(function(){
-    $(".declineBtn").prop("disabled", true)
+    $(".declineBtn").prop("disabled", true); // Disabling decline btn
 
     // Initializing an empty array
     phoneArray = []
@@ -22,7 +22,9 @@ $(document).ready(function(){
                 "phone_number": phoneArray[id],
                 csrfmiddlewaretoken: csrf_token
             },
-            success: $(".declineBtn").prop("disabled", false),
+            success: function (msg, status, jqXHR) {
+                $(".declineBtn").prop("disabled", false);
+            }
         });
     });
 
@@ -36,6 +38,9 @@ $(document).ready(function(){
                 "data": "decline",
                 csrfmiddlewaretoken: csrf_token
             },
+            success: function (msg, status, jqXHR) {
+                $(".declineBtn").prop("disabled", true);
+            }
         });
     });
 

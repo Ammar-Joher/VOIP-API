@@ -27,7 +27,12 @@ class VoipView(TemplateView):
         if request.user.is_authenticated:
             # Get only contacts that are for that specific user.
             clients = Contacts.objects.filter(user_id=request.user).order_by('id')
-            return render(request, self.template_name, {'clients': clients})
+
+            args = {
+                'clients': clients,
+            }
+
+            return render(request, self.template_name, args)
         else:
             return redirect('login')
 
@@ -124,7 +129,7 @@ class LoginView(TemplateView):
                         updater(request, 1)
 
                     print(json_request["user_token"])
-                    request.session['user_token'] = json_request["user_token"]
+                    request.session['user_token'] = json_request["user_token"]  # Add user token to the session
                     return redirect('voip')
             else:
                 return redirect(reverse('login'))
